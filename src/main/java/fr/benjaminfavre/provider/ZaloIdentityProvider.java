@@ -18,7 +18,7 @@ import javax.ws.rs.core.UriBuilder;
 
 public class ZaloIdentityProvider  extends AbstractOAuth2IdentityProvider<ZaloIdentityProviderConfig> implements SocialIdentityProvider<ZaloIdentityProviderConfig> {
 
-    private final String USER_INFO_URL = "https://graph.zalo.me/v2.0/me?fields=id,name,email,first_name,last_name";
+    private final String USER_INFO_URL = "https://graph.zalo.me/v2.0/me?fields=id,name,email,first_name,last_name,phoneNumber,gender,birthday";
     private final String USER_AUTHORIZATION_URL = "https://oauth.zaloapp.com/v4/permission";
     private final String USER_TOKEN_URL = "https://oauth.zaloapp.com/v4/access_token";
 
@@ -78,7 +78,7 @@ public class ZaloIdentityProvider  extends AbstractOAuth2IdentityProvider<ZaloId
 
     @Override
     protected String getDefaultScopes() {
-        return "id,name,picture,email";
+        return "id,name,picture,email,first_name,last_name,phoneNumber,gender,birthday";
     }
 
     protected UriBuilder createAuthorizationUrl(AuthenticationRequest request) {
@@ -100,21 +100,33 @@ public class ZaloIdentityProvider  extends AbstractOAuth2IdentityProvider<ZaloId
         String id = this.getJsonProperty(profile, "id");
         BrokeredIdentityContext user = new BrokeredIdentityContext(id);
         String email = this.getJsonProperty(profile, "email");
-        user.setEmail(email);
+        String phoneNumber = this.getJsonProperty(profile, "phoneNumber");
+
         String username = this.getJsonProperty(profile, "username");
         if (username == null) {
-            if (email != null) {
+            if (phoneNumber != null) {
+                username = phoneNumber;
+            } else if (email != null) {
                 username = email;
             } else {
                 username = id;
             }
         }
 
+        if ( email == null) {
+            email = username + "@localhost.com";
+        }
+        user.setEmail(email);
+
         user.setUsername(username);
         String firstName = this.getJsonProperty(profile, "first_name");
         String lastName = this.getJsonProperty(profile, "last_name");
+        String name = this.getJsonProperty(profile, "name");
         if (lastName == null) {
-            lastName = "";
+            lastName = name;
+        }
+        if (firstName == null) {
+            firstName = name;
         }
 
         user.setFirstName(firstName);
